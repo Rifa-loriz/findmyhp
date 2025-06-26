@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Find My HP - Google Maps</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body { font-family: sans-serif; padding: 30px; }
+      input, button { padding: 10px; margin-top: 10px; width: 100%; max-width: 300px; }
+      #map { height: 400px; width: 100%; margin-top: 20px; }
+      #dashboard { display: none; margin-top: 20px; }
+    </style>
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+      import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyC0K0d78RQCgIdf8ioW24jMS73s4x-1uu8",
+        authDomain: "findmyhp-6c0d0.firebaseapp.com",
+        projectId: "findmyhp-6c0d0",
+        storageBucket: "findmyhp-6c0d0.firebasestorage.app",
+        messagingSenderId: "881894583894",
+        appId: "1:881894583894:web:29893be539263cdfe215f7",
+        databaseURL: "https://findmyhp-6c0d0-default-rtdb.firebaseio.com"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+
+      let map, marker;
+
+      window.mulaiLacak = () => {
+        const phone = document.getElementById("phone").value.trim();
+        if (!phone) return alert("Masukkan nomor HP terlebih dahulu.");
+
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("status").innerText = "Melacak...";
+
+        const dataRef = ref(db, "devices/" + phone);
+        onValue(dataRef, snapshot => {
+          const data = snapshot.val();
+          if (data) {
+            const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
+            document.getElementById("status").innerText = data.status || "-";
+            document.getElementById("lokasi").innerText = lat + ", " + lng;
+            tampilkanPeta(lat, lng);
+          } else {
+            document.getElementById("status").innerText = "Data tidak ditemukan.";
+            document.getElementById("lokasi").innerText = "-";
+          }
+        });
+      };
+
+      window.tampilkanPeta = (lat, lng) => {
+        const lokasi = { lat, lng };
+        if (!map) {
+          map = new google.maps.Map(document.getElementById("map"), {
+            center: lokasi,
+            zoom: 17,
+            mapTypeId: "satellite"
+          });
+
+          marker = new google.maps.Marker({
+            position: lokasi,
+            map,
+            title: "Lokasi HP"
+          });
+        } else {
+          map.setCenter(lokasi);
+          marker.setPosition(lokasi);
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <h2> Find My HP</h2>
+    <input type="text" id="phone" placeholder="Masukkan nomor HP +62..." />
+    <button onclick="mulaiLacak()">Lacak HP</button>
+
+    <div id="dashboard">
+      <p>Status: <span id="status">-</span></p>
+      <p>Lokasi: <span id="lokasi">-</span></p>
+      <div id="map"></div>
+    </div>
+
+    <!-- Load Google Maps API -->
+    <script async
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2meBexoZOJDdsjbhAu0Wcq5nAmkioUHI&callback=initMap">
+    </script>
+    <script>
+      // agar Google Maps tidak error tanpa initMap
+      function initMap() {}
+    </script>
+  </body>
+</html>
