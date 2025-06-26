@@ -1,18 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
   <head>
-    <title>Find My HP - Google Maps</title>
+    <meta charset="UTF-8" />
+    <title>Find My HP</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-      body { font-family: sans-serif; padding: 30px; }
-      input, button { padding: 10px; margin-top: 10px; width: 100%; max-width: 300px; }
-      #map { height: 400px; width: 100%; margin-top: 20px; }
-      #dashboard { display: none; margin-top: 20px; }
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+      }
+
+      h1 {
+        text-align: center;
+        color: #007acc;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #252526;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      }
+
+      input, button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 12px;
+        border-radius: 6px;
+        border: 1px solid #3c3c3c;
+        font-size: 16px;
+        background-color: #1e1e1e;
+        color: #ffffff;
+      }
+
+      button {
+        background-color: #007acc;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      button:hover {
+        background-color: #005f99;
+      }
+
+      #dashboard {
+        margin-top: 24px;
+        display: none;
+      }
+
+      .info {
+        background: #333333;
+        padding: 12px;
+        margin-top: 12px;
+        border-left: 5px solid #00bc8c;
+        border-radius: 6px;
+      }
+
+      #map {
+        width: 100%;
+        height: 400px;
+        margin-top: 16px;
+        border-radius: 8px;
+        border: 1px solid #3c3c3c;
+      }
+
+      a {
+        color: #00bcf2;
+        text-decoration: underline;
+      }
+
+      .control-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .control-buttons button {
+        flex: 1;
+      }
     </style>
-    <!-- Firebase SDK -->
+
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-      import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+      import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyC0K0d78RQCgIdf8ioW24jMS73s4x-1uu8",
@@ -26,12 +103,12 @@
 
       const app = initializeApp(firebaseConfig);
       const db = getDatabase(app);
-
-      let map, marker;
+      let map, marker, currentPhone = "";
 
       window.mulaiLacak = () => {
         const phone = document.getElementById("phone").value.trim();
         if (!phone) return alert("Masukkan nomor HP terlebih dahulu.");
+        currentPhone = phone;
 
         document.getElementById("dashboard").style.display = "block";
         document.getElementById("status").innerText = "Melacak...";
@@ -42,11 +119,19 @@
           if (data) {
             const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
             document.getElementById("status").innerText = data.status || "-";
-            document.getElementById("lokasi").innerText = lat + ", " + lng;
+            document.getElementById("lokasi").innerText = `${lat}, ${lng}`;
+            document.getElementById("lat").innerText = lat;
+            document.getElementById("lng").innerText = lng;
+            document.getElementById("mapsLink").href = `https://maps.google.com/?q=${lat},${lng}`;
+            document.getElementById("mapsLink").innerText = `https://maps.google.com/?q=${lat},${lng}`;
             tampilkanPeta(lat, lng);
           } else {
             document.getElementById("status").innerText = "Data tidak ditemukan.";
             document.getElementById("lokasi").innerText = "-";
+            document.getElementById("lat").innerText = "-";
+            document.getElementById("lng").innerText = "-";
+            document.getElementById("mapsLink").innerText = "-";
+            document.getElementById("mapsLink").href = "#";
           }
         });
       };
@@ -59,36 +144,50 @@
             zoom: 17,
             mapTypeId: "satellite"
           });
-
-          marker = new google.maps.Marker({
-            position: lokasi,
-            map,
-            title: "Lokasi HP"
-          });
+          marker = new google.maps.Marker({ position: lokasi, map, title: "Lokasi HP" });
         } else {
           map.setCenter(lokasi);
           marker.setPosition(lokasi);
         }
       };
+
+      window.kirimPerintah = (aksi) => {
+        if (!currentPhone) return alert("Lacak dulu nomor HP-nya.");
+        const actionRef = ref(db, "devices/" + currentPhone + "/action");
+        set(actionRef, aksi).then(() => {
+          alert("Perintah '" + aksi + "' berhasil dikirim.");
+        });
+      };
     </script>
   </head>
   <body>
-    <h2> Find My HP</h2>
-    <input type="text" id="phone" placeholder="Masukkan nomor HP +62..." />
-    <button onclick="mulaiLacak()">Lacak HP</button>
+    <div class="container">
+      <h1>Find My HP</h1>
+      <input type="text" id="phone" placeholder="Masukkan nomor HP +62..." />
+      <button onclick="mulaiLacak()">Lacak Sekarang</button>
 
-    <div id="dashboard">
-      <p>Status: <span id="status">-</span></p>
-      <p>Lokasi: <span id="lokasi">-</span></p>
-      <div id="map"></div>
+      <div id="dashboard">
+        <div class="info">
+          <p><strong>Status:</strong> <span id="status">-</span></p>
+          <p><strong>Lokasi (gabungan):</strong> <span id="lokasi">-</span></p>
+          <p><strong>Latitude:</strong> <span id="lat">-</span></p>
+          <p><strong>Longitude:</strong> <span id="lng">-</span></p>
+          <p><strong>Lihat di Google Maps:</strong> <a id="mapsLink" href="#" target="_blank">-</a></p>
+          <p style="color:#ff9800;"><em>Jika map tidak muncul, salin lokasi dan buka langsung di Google Maps.</em></p>
+        </div>
+
+        <div class="control-buttons">
+          <button onclick="kirimPerintah('lock')"> Kunci Layar</button>
+          <button onclick="kirimPerintah('alarm')"> Bunyi Alarm</button>
+        </div>
+
+        <div id="map"></div>
+      </div>
     </div>
 
-    <!-- Load Google Maps API -->
-    <script async
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2meBexoZOJDdsjbhAu0Wcq5nAmkioUHI&callback=initMap">
-    </script>
+    <!-- Google Maps API -->
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2meBexoZOJDdsjbhAu0Wcq5nAmkioUHI&callback=initMap"></script>
     <script>
-      // agar Google Maps tidak error tanpa initMap
       function initMap() {}
     </script>
   </body>
