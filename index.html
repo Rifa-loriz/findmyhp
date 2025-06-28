@@ -76,6 +76,80 @@
       flex: 1;
     }
   </style>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0K0d78RQCgIdf8ioW24jMS73s4x-1uu8",
+      authDomain: "findmyhp-6c0d0.firebaseapp.com",
+      databaseURL: "https://findmyhp-6c0d0-default-rtdb.firebaseio.com/",
+      projectId: "findmyhp-6c0d0",
+      storageBucket: "findmyhp-6c0d0.appspot.com",
+      messagingSenderId: "881894583894",
+      appId: "1:881894583894:web:29893be539263cdfe215f7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    let map, marker, currentPhone = "";
+
+    window.mulaiLacak = () => {
+      const phone = document.getElementById("phone").value.trim();
+      if (!phone) return alert("Masukkan nomor HP terlebih dahulu.");
+      currentPhone = phone;
+
+      document.getElementById("dashboard").style.display = "block";
+      document.getElementById("status").innerText = "Melacak...";
+
+      const lokasiRef = ref(db, "devices/" + phone);
+      onValue(lokasiRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
+          document.getElementById("status").innerText = data.status || "-";
+          document.getElementById("lokasi").innerText = `${lat}, ${lng}`;
+          document.getElementById("lat").innerText = lat;
+          document.getElementById("lng").innerText = lng;
+          document.getElementById("mapsLink").href = `https://maps.google.com/?q=${lat},${lng}`;
+          document.getElementById("mapsLink").innerText = `https://maps.google.com/?q=${lat},${lng}`;
+          tampilkanPeta(lat, lng);
+        } else {
+          document.getElementById("status").innerText = "Data tidak ditemukan.";
+          document.getElementById("lokasi").innerText = "-";
+          document.getElementById("lat").innerText = "-";
+          document.getElementById("lng").innerText = "-";
+          document.getElementById("mapsLink").innerText = "-";
+          document.getElementById("mapsLink").href = "#";
+        }
+      });
+    };
+
+    function tampilkanPeta(lat, lng) {
+      const lokasi = { lat, lng };
+      if (!map) {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: lokasi,
+          zoom: 17,
+          mapTypeId: "satellite"
+        });
+        marker = new google.maps.Marker({ position: lokasi, map, title: "Lokasi HP" });
+      } else {
+        map.setCenter(lokasi);
+        marker.setPosition(lokasi);
+      }
+    }
+
+    window.kirimPerintah = (aksi) => {
+      if (!currentPhone) return alert("Lacak dulu nomor HP-nya.");
+      const actionRef = ref(db, "devices/" + currentPhone + "/action");
+      set(actionRef, aksi).then(() => {
+        alert("Perintah '" + aksi + "' berhasil dikirim.");
+      });
+    };
+  </script>
 </head>
 <body>
   <div class="container">
@@ -103,83 +177,10 @@
     </div>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyC0K0d78RQCgIdf8ioW24jMS73s4x-1uu8",
-      authDomain: "findmyhp-6c0d0.firebaseapp.com",
-      databaseURL: "https://findmyhp-6c0d0-default-rtdb.firebaseio.com/",
-      projectId: "findmyhp-6c0d0",
-      storageBucket: "findmyhp-6c0d0.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdefgh"
-    };
-
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    let map, marker, currentPhone = "";
-
-    function mulaiLacak() {
-      const phone = document.getElementById("phone").value.trim();
-      if (!phone) return alert("Masukkan nomor HP terlebih dahulu.");
-      currentPhone = phone;
-
-      document.getElementById("dashboard").style.display = "block";
-      document.getElementById("status").innerText = "Melacak...";
-
-      const lokasiRef = db.ref("devices/" + phone);
-      lokasiRef.on("value", (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
-          document.getElementById("status").innerText = data.status || "-";
-          document.getElementById("lokasi").innerText = `${lat}, ${lng}`;
-          document.getElementById("lat").innerText = lat;
-          document.getElementById("lng").innerText = lng;
-          document.getElementById("mapsLink").href = `https://maps.google.com/?q=${lat},${lng}`;
-          document.getElementById("mapsLink").innerText = `https://maps.google.com/?q=${lat},${lng}`;
-          tampilkanPeta(lat, lng);
-        } else {
-          document.getElementById("status").innerText = "Data tidak ditemukan.";
-          document.getElementById("lokasi").innerText = "-";
-          document.getElementById("lat").innerText = "-";
-          document.getElementById("lng").innerText = "-";
-          document.getElementById("mapsLink").innerText = "-";
-          document.getElementById("mapsLink").href = "#";
-        }
-      });
-    }
-
-    function tampilkanPeta(lat, lng) {
-      const lokasi = { lat, lng };
-      if (!map) {
-        map = new google.maps.Map(document.getElementById("map"), {
-          center: lokasi,
-          zoom: 17,
-          mapTypeId: "satellite"
-        });
-        marker = new google.maps.Marker({ position: lokasi, map, title: "Lokasi HP" });
-      } else {
-        map.setCenter(lokasi);
-        marker.setPosition(lokasi);
-      }
-    }
-
-    function kirimPerintah(aksi) {
-      if (!currentPhone) return alert("Lacak dulu nomor HP-nya.");
-      const actionRef = db.ref("devices/" + currentPhone + "/action");
-      actionRef.set(aksi).then(() => {
-        alert("Perintah '" + aksi + "' berhasil dikirim.");
-      });
-    }
-  </script>
-
-  <!-- Google Maps -->
+  <!-- Google Maps API -->
   <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2meBexoZOJDdsjbhAu0Wcq5nAmkioUHI&callback=initMap"></script>
-  <script>function initMap() {}</script>
+  <script>
+    function initMap() {} // supaya Google Maps tidak error
+  </script>
 </body>
 </html>
