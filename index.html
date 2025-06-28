@@ -1,194 +1,186 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Find My HP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      body {
-        font-family: 'Segoe UI', sans-serif;
-        margin: 0;
-        padding: 20px;
-        background-color: #1e1e1e;
-        color: #d4d4d4;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <title>Find My HP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+    }
 
-      h1 {
-        text-align: center;
-        color: #007acc;
-      }
+    h1 {
+      text-align: center;
+      color: #007acc;
+    }
 
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        background: #252526;
-        padding: 24px;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-      }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #252526;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
 
-      input, button {
-        width: 100%;
-        padding: 12px;
-        margin-top: 12px;
-        border-radius: 6px;
-        border: 1px solid #3c3c3c;
-        font-size: 16px;
-        background-color: #1e1e1e;
-        color: #ffffff;
-      }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 6px;
+      border: 1px solid #3c3c3c;
+      font-size: 16px;
+      background-color: #1e1e1e;
+      color: #ffffff;
+    }
 
-      button {
-        background-color: #007acc;
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
-      }
+    button {
+      background-color: #007acc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
 
-      button:hover {
-        background-color: #005f99;
-      }
+    button:hover {
+      background-color: #005f99;
+    }
 
-      #dashboard {
-        margin-top: 24px;
-        display: none;
-      }
+    .info {
+      background: #333333;
+      padding: 12px;
+      margin-top: 12px;
+      border-left: 5px solid #00bc8c;
+      border-radius: 6px;
+    }
 
-      .info {
-        background: #333333;
-        padding: 12px;
-        margin-top: 12px;
-        border-left: 5px solid #00bc8c;
-        border-radius: 6px;
-      }
+    #map {
+      width: 100%;
+      height: 400px;
+      margin-top: 16px;
+      border-radius: 8px;
+      border: 1px solid #3c3c3c;
+    }
 
-      #map {
-        width: 100%;
-        height: 400px;
-        margin-top: 16px;
-        border-radius: 8px;
-        border: 1px solid #3c3c3c;
-      }
+    .control-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
 
-      a {
-        color: #00bcf2;
-        text-decoration: underline;
-      }
+    .control-buttons button {
+      flex: 1;
+    }
+  </style>
 
-      .control-buttons {
-        display: flex;
-        gap: 10px;
-        margin-top: 16px;
-      }
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-      .control-buttons button {
-        flex: 1;
-      }
-    </style>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0K0d78RQCgIdf8ioW24jMS73s4x-1uu8",
+      authDomain: "your-project.firebaseapp.com",
+      databaseURL: "https://your-project.firebaseio.com",
+      projectId: "your-project",
+      storageBucket: "your-project.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdefgh"
+    };
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-      import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    let map, marker, currentPhone = "";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyC0K0d78RQCgIdf8ioW24jMS73s4x-1uu8",
-        authDomain: "findmyhp-6c0d0.firebaseapp.com",
-        projectId: "findmyhp-6c0d0",
-        storageBucket: "findmyhp-6c0d0.firebasestorage.app",
-        messagingSenderId: "881894583894",
-        appId: "1:881894583894:web:29893be539263cdfe215f7",
-        databaseURL: "https://findmyhp-6c0d0-default-rtdb.firebaseio.com"
-      };
+    window.mulaiLacak = () => {
+      const phone = document.getElementById("phone").value.trim();
+      if (!phone) return alert("Masukkan nomor HP terlebih dahulu.");
+      currentPhone = phone;
 
-      const app = initializeApp(firebaseConfig);
-      const db = getDatabase(app);
-      let map, marker, currentPhone = "";
+      document.getElementById("dashboard").style.display = "block";
+      document.getElementById("status").innerText = "Melacak...";
 
-      window.mulaiLacak = () => {
-        const phone = document.getElementById("phone").value.trim();
-        if (!phone) return alert("Masukkan nomor HP terlebih dahulu.");
-        currentPhone = phone;
-
-        document.getElementById("dashboard").style.display = "block";
-        document.getElementById("status").innerText = "Melacak...";
-
-        const dataRef = ref(db, "devices/" + phone);
-        onValue(dataRef, snapshot => {
-          const data = snapshot.val();
-          if (data) {
-            const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
-            document.getElementById("status").innerText = data.status || "-";
-            document.getElementById("lokasi").innerText = `${lat}, ${lng}`;
-            document.getElementById("lat").innerText = lat;
-            document.getElementById("lng").innerText = lng;
-            document.getElementById("mapsLink").href = `https://maps.google.com/?q=${lat},${lng}`;
-            document.getElementById("mapsLink").innerText = `https://maps.google.com/?q=${lat},${lng}`;
-            tampilkanPeta(lat, lng);
-          } else {
-            document.getElementById("status").innerText = "Data tidak ditemukan.";
-            document.getElementById("lokasi").innerText = "-";
-            document.getElementById("lat").innerText = "-";
-            document.getElementById("lng").innerText = "-";
-            document.getElementById("mapsLink").innerText = "-";
-            document.getElementById("mapsLink").href = "#";
-          }
-        });
-      };
-
-      window.tampilkanPeta = (lat, lng) => {
-        const lokasi = { lat, lng };
-        if (!map) {
-          map = new google.maps.Map(document.getElementById("map"), {
-            center: lokasi,
-            zoom: 17,
-            mapTypeId: "satellite"
-          });
-          marker = new google.maps.Marker({ position: lokasi, map, title: "Lokasi HP" });
+      const lokasiRef = ref(db, "devices/" + phone);
+      onValue(lokasiRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
+          document.getElementById("status").innerText = data.status || "-";
+          document.getElementById("lokasi").innerText = `${lat}, ${lng}`;
+          document.getElementById("lat").innerText = lat;
+          document.getElementById("lng").innerText = lng;
+          document.getElementById("mapsLink").href = `https://maps.google.com/?q=${lat},${lng}`;
+          document.getElementById("mapsLink").innerText = `https://maps.google.com/?q=${lat},${lng}`;
+          tampilkanPeta(lat, lng);
         } else {
-          map.setCenter(lokasi);
-          marker.setPosition(lokasi);
+          document.getElementById("status").innerText = "Data tidak ditemukan.";
+          document.getElementById("lokasi").innerText = "-";
+          document.getElementById("lat").innerText = "-";
+          document.getElementById("lng").innerText = "-";
+          document.getElementById("mapsLink").innerText = "-";
+          document.getElementById("mapsLink").href = "#";
         }
-      };
+      });
+    };
 
-      window.kirimPerintah = (aksi) => {
-        if (!currentPhone) return alert("Lacak dulu nomor HP-nya.");
-        const actionRef = ref(db, "devices/" + currentPhone + "/action");
-        set(actionRef, aksi).then(() => {
-          alert("Perintah '" + aksi + "' berhasil dikirim.");
+    function tampilkanPeta(lat, lng) {
+      const lokasi = { lat, lng };
+      if (!map) {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: lokasi,
+          zoom: 17,
+          mapTypeId: "satellite"
         });
-      };
-    </script>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Find My HP</h1>
-      <input type="text" id="phone" placeholder="Masukkan nomor HP +62..." />
-      <button onclick="mulaiLacak()">Lacak Sekarang</button>
+        marker = new google.maps.Marker({ position: lokasi, map, title: "Lokasi HP" });
+      } else {
+        map.setCenter(lokasi);
+        marker.setPosition(lokasi);
+      }
+    }
 
-      <div id="dashboard">
-        <div class="info">
-          <p><strong>Status:</strong> <span id="status">-</span></p>
-          <p><strong>Lokasi (gabungan):</strong> <span id="lokasi">-</span></p>
-          <p><strong>Latitude:</strong> <span id="lat">-</span></p>
-          <p><strong>Longitude:</strong> <span id="lng">-</span></p>
-          <p><strong>Lihat di Google Maps:</strong> <a id="mapsLink" href="#" target="_blank">-</a></p>
-          <p style="color:#ff9800;"><em>Jika map tidak muncul, salin lokasi dan buka langsung di Google Maps.</em></p>
-        </div>
+    window.kirimPerintah = (aksi) => {
+      if (!currentPhone) return alert("Lacak dulu nomor HP-nya.");
+      const actionRef = ref(db, "devices/" + currentPhone + "/action");
+      set(actionRef, aksi).then(() => {
+        alert("Perintah '" + aksi + "' berhasil dikirim.");
+      });
+    };
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Find My HP</h1>
+    <input type="text" id="phone" placeholder="Masukkan nomor HP +62..." />
+    <button onclick="mulaiLacak()">Lacak Sekarang</button>
 
-        <div class="control-buttons">
-          <button onclick="kirimPerintah('lock')"> Kunci Layar</button>
-          <button onclick="kirimPerintah('alarm')"> Bunyi Alarm</button>
-        </div>
-
-        <div id="map"></div>
+    <div id="dashboard" style="display:none;">
+      <div class="info">
+        <p><strong>Status:</strong> <span id="status">-</span></p>
+        <p><strong>Lokasi (gabungan):</strong> <span id="lokasi">-</span></p>
+        <p><strong>Latitude:</strong> <span id="lat">-</span></p>
+        <p><strong>Longitude:</strong> <span id="lng">-</span></p>
+        <p><strong>Lihat di Google Maps:</strong> <a id="mapsLink" href="#" target="_blank">-</a></p>
+        <p style="color:#ff9800;"><em>Jika map tidak muncul, salin lokasi dan buka langsung di Google Maps.</em></p>
       </div>
-    </div>
 
-    <!-- Google Maps API -->
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2meBexoZOJDdsjbhAu0Wcq5nAmkioUHI&callback=initMap"></script>
-    <script>
-      function initMap() {}
-    </script>
-  </body>
+      <div class="control-buttons">
+        <button onclick="kirimPerintah('lock')">Kunci Layar</button>
+        <button onclick="kirimPerintah('alarm')">Bunyi Alarm</button>
+        <button onclick="kirimPerintah('stop_alarm')">Stop Alarm</button>
+      </div>
+
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- Google Maps API -->
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2meBexoZOJDdsjbhAu0Wcq5nAmkioUHI&callback=initMap"></script>
+  <script>
+    function initMap() {} // supaya Google Maps tidak error
+  </script>
+</body>
 </html>
